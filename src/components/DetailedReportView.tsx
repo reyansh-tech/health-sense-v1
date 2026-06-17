@@ -28,25 +28,7 @@ interface DetailedReportViewProps {
 
 const DetailedReportView: React.FC<DetailedReportViewProps> = ({ record, previousRecord, onClose }) => {
   
-  const handleExport = () => {
-    showSuccess("Medical PDF Report exported successfully!");
-  };
-
-  // Determine color based on risk level
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case "Low":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "Moderate":
-        return "bg-amber-50 text-amber-700 border-amber-200";
-      case "High":
-        return "bg-rose-50 text-rose-700 border-rose-200 animate-pulse";
-      default:
-        return "bg-slate-50 text-slate-700 border-slate-200";
-    }
-  };
-
-  // Vital Signs Analysis
+  // Vital Signs Analysis helper functions
   const getTempAnalysis = (temp: number) => {
     if (temp >= 39.5) return { status: "Critical Fever", color: "text-rose-600", desc: "Severe hyperthermia detected. Immediate medical intervention required." };
     if (temp >= 38.0) return { status: "Moderate Fever", color: "text-amber-600", desc: "Elevated body temperature. Rest and hydration recommended." };
@@ -110,6 +92,302 @@ const DetailedReportView: React.FC<DetailedReportViewProps> = ({ record, previou
       recs.push("Maintain healthy activity levels and consistent sleep patterns.");
     }
     return recs;
+  };
+
+  const handleExport = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showSuccess("Please allow popups to export the PDF report.");
+      return;
+    }
+
+    const formattedDate = record.timestamp.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    const formattedTime = record.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const aiAssessmentHTML = getAIAssessment()
+      .map(item => `<li>${item}</li>`)
+      .join("");
+
+    const recommendationsHTML = getRecommendations()
+      .map(item => `<li>${item}</li>`)
+      .join("");
+
+    const alertsHTML = record.alerts.length > 0
+      ? record.alerts.map(alert => `
+          <div class="alert-card">
+            <strong>${alert.title} (${alert.severity.toUpperCase()})</strong>
+            <p>${alert.description}</p>
+            <p style="font-size: 11px; color: #666; margin-top: 4px;">Recommendation: ${alert.recommendation}</p>
+          </div>
+        `).join("")
+      : "<p>No alerts were generated during this reading.</p>";
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>HealthSense Medical Report - ${record.id}</title>
+          <style>
+            body {
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              color: #333;
+              line-height: 1.6;
+              padding: 40px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              border-bottom: 3px solid #2563eb;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+            }
+            .logo-container {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            .logo-icon {
+              background-color: #2563eb;
+              color: white;
+              width: 40px;
+              height: 40px;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              font-size: 24px;
+            }
+            .title {
+              font-size: 28px;
+              font-weight: 800;
+              color: #1e293b;
+              margin: 0;
+            }
+            .subtitle {
+              font-size: 12px;
+              color: #64748b;
+              margin: 2px 0 0 0;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            .meta-info {
+              text-align: right;
+              font-size: 13px;
+              color: #475569;
+            }
+            .section-title {
+              font-size: 18px;
+              font-weight: 700;
+              color: #1e293b;
+              border-bottom: 1px solid #e2e8f0;
+              padding-bottom: 8px;
+              margin-top: 30px;
+              margin-bottom: 15px;
+            }
+            .grid-2 {
+              display: grid;
+              grid-template-cols: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 20px;
+            }
+            .card {
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+            }
+            .score-box {
+              text-align: center;
+              background-color: #eff6ff;
+              border: 2px solid #bfdbfe;
+            }
+            .score-value {
+              font-size: 48px;
+              font-weight: 900;
+              color: #2563eb;
+              line-height: 1;
+              margin: 10px 0;
+            }
+            .vitals-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            }
+            .vitals-table th, .vitals-table td {
+              padding: 12px 15px;
+              text-align: left;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .vitals-table th {
+              background-color: #f1f5f9;
+              font-weight: 700;
+              color: #475569;
+            }
+            .badge {
+              display: inline-block;
+              padding: 4px 10px;
+              border-radius: 9999px;
+              font-size: 12px;
+              font-weight: 700;
+              text-transform: uppercase;
+            }
+            .badge-low { background-color: #d1fae5; color: #065f46; }
+            .badge-moderate { background-color: #fef3c7; color: #92400e; }
+            .badge-high { background-color: #fee2e2; color: #991b1b; }
+            ul {
+              padding-left: 20px;
+              margin: 0;
+            }
+            li {
+              margin-bottom: 8px;
+              font-size: 14px;
+            }
+            .alert-card {
+              background-color: #fff5f5;
+              border-left: 4px solid #f56565;
+              padding: 12px;
+              margin-bottom: 10px;
+              border-radius: 0 8px 8px 0;
+              font-size: 13px;
+            }
+            .footer {
+              margin-top: 50px;
+              border-top: 1px solid #e2e8f0;
+              padding-top: 15px;
+              text-align: center;
+              font-size: 11px;
+              color: #94a3b8;
+            }
+            @media print {
+              body { padding: 0; }
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo-container">
+              <div class="logo-icon">H</div>
+              <div>
+                <h1 class="title">HealthSense</h1>
+                <p class="subtitle">Vasudha 2027 Science Fair Project</p>
+              </div>
+            </div>
+            <div class="meta-info">
+              <p style="margin: 0; font-weight: bold;">Medical Diagnostic Report</p>
+              <p style="margin: 2px 0 0 0;">Report ID: HS-${record.id.toUpperCase()}</p>
+              <p style="margin: 2px 0 0 0;">Date: ${formattedDate}</p>
+              <p style="margin: 2px 0 0 0;">Time: ${formattedTime}</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card score-box">
+              <div style="font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Overall Health Score</div>
+              <div class="score-value">${record.healthScore}</div>
+              <div style="font-size: 14px; font-weight: bold; color: #475569;">Status: ${record.overallStatus}</div>
+            </div>
+            <div class="card" style="display: flex; flex-col; justify-content: center; align-items: flex-start; gap: 10px;">
+              <div style="font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Risk Assessment</div>
+              <div>
+                <span class="badge badge-${record.riskLevel.toLowerCase()}">${record.riskLevel} Risk</span>
+              </div>
+              <p style="font-size: 13px; color: #475569; margin-top: 10px; margin-bottom: 0;">
+                This assessment is generated in real-time by the HealthSense AI engine based on continuous physiological telemetry.
+              </p>
+            </div>
+          </div>
+
+          <div class="section-title">Vital Signs Analysis</div>
+          <table class="vitals-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Status</th>
+                <th>Reference Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Body Temperature</strong></td>
+                <td>${record.temperature}°C</td>
+                <td><span style="font-weight: bold;">${getTempAnalysis(record.temperature).status}</span></td>
+                <td>36.0°C - 37.5°C</td>
+              </tr>
+              <tr>
+                <td><strong>Heart Rate</strong></td>
+                <td>${record.heartRate} BPM</td>
+                <td><span style="font-weight: bold;">${getHeartRateAnalysis(record.heartRate).status}</span></td>
+                <td>60 - 100 BPM</td>
+              </tr>
+              <tr>
+                <td><strong>Blood Oxygen (SpO2)</strong></td>
+                <td>${record.bloodOxygen}%</td>
+                <td><span style="font-weight: bold;">${getOxygenAnalysis(record.bloodOxygen).status}</span></td>
+                <td>95% - 100%</td>
+              </tr>
+              <tr>
+                <td><strong>Hydration Level</strong></td>
+                <td>${record.hydration}%</td>
+                <td><span style="font-weight: bold;">${getHydrationAnalysis(record.hydration).status}</span></td>
+                <td>50% - 100%</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="section-title">AI Health Assessment</div>
+          <div class="card" style="background-color: #f0fdf4; border-color: #bbf7d0;">
+            <ul style="margin: 0; padding-left: 20px;">
+              ${aiAssessmentHTML}
+            </ul>
+          </div>
+
+          <div class="section-title">Personalized Recommendations</div>
+          <div class="card" style="background-color: #f0f9ff; border-color: #bae6fd;">
+            <ul style="margin: 0; padding-left: 20px;">
+              ${recommendationsHTML}
+            </ul>
+          </div>
+
+          <div class="section-title">Alert History</div>
+          <div class="card">
+            ${alertsHTML}
+          </div>
+
+          <div class="footer">
+            <p style="margin: 0; font-weight: bold;">HealthSense AI Smart Patch Companion App Prototype</p>
+            <p style="margin: 4px 0 0 0;">Developed for Vasudha 2027 Science Fair • Confidential Medical Telemetry</p>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    showSuccess("PDF Report generated! Use the print dialog to save as PDF.");
+  };
+
+  // Determine color based on risk level
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case "Low":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Moderate":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      case "High":
+        return "bg-rose-50 text-rose-700 border-rose-200 animate-pulse";
+      default:
+        return "bg-slate-50 text-slate-700 border-slate-200";
+    }
   };
 
   // Trend Analysis Calculations
