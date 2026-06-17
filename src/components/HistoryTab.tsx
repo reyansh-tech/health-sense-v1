@@ -5,19 +5,20 @@ import { useHealth, HistoryRecord, RiskLevel } from "@/context/HealthContext";
 import { 
   History, 
   Trash2, 
-  Filter, 
   Thermometer, 
   Heart, 
   Droplets, 
-  Activity,
   Search,
-  Calendar
+  Calendar,
+  ChevronRight
 } from "lucide-react";
+import DetailedReportView from "./DetailedReportView";
 
 const HistoryTab: React.FC = () => {
   const { history, deleteHistoryRecord, clearHistory } = useHealth();
   const [filter, setFilter] = useState<"All" | RiskLevel>("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
 
   // Filter and search records
   const filteredHistory = history.filter((record) => {
@@ -25,7 +26,8 @@ const HistoryTab: React.FC = () => {
     const matchesSearch = 
       record.healthScore.toString().includes(searchQuery) ||
       record.temperature.toString().includes(searchQuery) ||
-      record.heartRate.toString().includes(searchQuery);
+      record.heartRate.toString().includes(searchQuery) ||
+      record.overallStatus.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -39,6 +41,25 @@ const HistoryTab: React.FC = () => {
         return "bg-rose-50 text-rose-700 border-rose-100";
     }
   };
+
+  // Find the previous record in chronological order (which is the next item in our reverse-chronological array)
+  const getPreviousRecord = (currentRecord: HistoryRecord) => {
+    const currentIndex = history.findIndex(r => r.id === currentRecord.id);
+    if (currentIndex !== -1 && currentIndex < history.length - 1) {
+      return history[currentIndex + 1];
+    }
+    return undefined;
+  };
+
+  if (selectedRecord) {
+    return (
+      <DetailedReportView 
+        record={selectedRecord} 
+        previousRecord={getPreviousRecord(selectedRecord)}
+        onClose={() => setSelectedRecord(null)}
+      />
+    );
+  }
 
   return (
     <div className="pb-24 pt-4 px-4 space-y-6 animate-fade-in">
@@ -66,7 +87,7 @@ const HistoryTab: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by score, temp, or heart rate..."
+            placeholder="Search by score, status, temp, or heart rate..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
@@ -111,7 +132,8 @@ const HistoryTab: React.FC = () => {
           {filteredHistory.map((record) => (
             <div 
               key={record.id}
-              className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col gap-3 relative overflow-hidden hover:border-slate-200 transition-all"
+              onClick={() => setSelectedRecord(record)}
+              className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col gap-3 relative overflow-hidden hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group"
             >
               {/* Top Row: Date & Score */}
               <div className="flex justify-between items-center">
@@ -121,7 +143,7 @@ const HistoryTab: React.FC = () => {
                     {record.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric' })} • {record.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getRiskBadgeClass(record.riskLevel)}`}>
                     {record.riskLevel} Risk
                   </span>
@@ -132,6 +154,17 @@ const HistoryTab: React.FC = () => {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              </div>
+
+              {/* Middle Row: Overall Status */}
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-800">
+                  {record.overallStatus}
+                </span>
+                <span className="text-xs text-blue-600 font-bold flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  View Report
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </span>
               </div>
 
               {/* Bottom Row: Vitals Grid */}

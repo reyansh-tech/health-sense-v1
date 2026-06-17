@@ -34,6 +34,8 @@ export interface HistoryRecord {
   healthScore: number;
   riskLevel: RiskLevel;
   timestamp: Date;
+  overallStatus: string;
+  alerts: AlertItem[];
 }
 
 interface HealthContextType {
@@ -74,6 +76,8 @@ const initialHistory: HistoryRecord[] = [
     hydration: 80,
     healthScore: 98,
     riskLevel: "Low",
+    overallStatus: "Excellent",
+    alerts: [],
     timestamp: new Date(Date.now() - 3600000 * 4),
   },
   {
@@ -84,6 +88,8 @@ const initialHistory: HistoryRecord[] = [
     hydration: 78,
     healthScore: 94,
     riskLevel: "Low",
+    overallStatus: "Stable",
+    alerts: [],
     timestamp: new Date(Date.now() - 3600000 * 8),
   },
   {
@@ -94,6 +100,8 @@ const initialHistory: HistoryRecord[] = [
     hydration: 65,
     healthScore: 85,
     riskLevel: "Moderate",
+    overallStatus: "Slightly Elevated",
+    alerts: [],
     timestamp: new Date(Date.now() - 3600000 * 12),
   },
 ];
@@ -244,7 +252,18 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAlerts(newAlerts);
   };
 
+  const getOverallStatus = (score: number, risk: RiskLevel) => {
+    if (risk === "High") return "Critical Condition";
+    if (risk === "Moderate") {
+      if (readings.hydration < 50) return "Dehydrated State";
+      return "Slightly Elevated Vitals";
+    }
+    if (score >= 95) return "Excellent Health";
+    return "Stable Condition";
+  };
+
   const saveCurrentReading = () => {
+    const status = getOverallStatus(readings.healthScore, readings.riskLevel);
     const newRecord: HistoryRecord = {
       id: Math.random().toString(36).substring(2, 9),
       temperature: readings.temperature,
@@ -253,6 +272,8 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       hydration: readings.hydration,
       healthScore: readings.healthScore,
       riskLevel: readings.riskLevel,
+      overallStatus: status,
+      alerts: [...alerts],
       timestamp: new Date(),
     };
     setHistory((prev) => [newRecord, ...prev]);
