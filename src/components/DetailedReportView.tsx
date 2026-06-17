@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { HistoryRecord } from "@/context/HealthContext";
 import { 
   X, 
@@ -16,9 +16,11 @@ import {
   ArrowUpRight, 
   ArrowDownRight, 
   Minus,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles
 } from "lucide-react";
 import { showSuccess } from "@/utils/toast";
+import AIReportView from "./AIReportView";
 
 interface DetailedReportViewProps {
   record: HistoryRecord;
@@ -27,6 +29,7 @@ interface DetailedReportViewProps {
 }
 
 const DetailedReportView: React.FC<DetailedReportViewProps> = ({ record, previousRecord, onClose }) => {
+  const [showAIReport, setShowAIReport] = useState(false);
   
   // Vital Signs Analysis helper functions
   const getTempAnalysis = (temp: number) => {
@@ -415,6 +418,15 @@ const DetailedReportView: React.FC<DetailedReportViewProps> = ({ record, previou
   const HrTrendIcon = hrTrend.icon;
   const ScoreTrendIcon = scoreTrend.icon;
 
+  if (showAIReport) {
+    return (
+      <AIReportView 
+        record={record} 
+        onBack={() => setShowAIReport(false)} 
+      />
+    );
+  }
+
   return (
     <div className="pb-24 pt-4 px-4 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
       {/* Header */}
@@ -657,6 +669,15 @@ const DetailedReportView: React.FC<DetailedReportViewProps> = ({ record, previou
           </div>
         )}
       </div>
+
+      {/* Generate AI Health Report Button */}
+      <button
+        onClick={() => setShowAIReport(true)}
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-4 rounded-2xl shadow-md shadow-blue-100 transition-all text-xs"
+      >
+        <Sparkles className="w-4 h-4" />
+        Generate AI Health Report
+      </button>
     </div>
   );
 };

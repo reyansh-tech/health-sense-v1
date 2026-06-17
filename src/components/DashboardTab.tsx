@@ -298,11 +298,11 @@ const DashboardTab: React.FC = () => {
           Save Reading
         </button>
         <button
-          onClick={() => setActiveTab("report")}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-100 transition-all text-xs"
+          onClick={() => setActiveTab("ai-report")}
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-100 transition-all text-xs"
         >
-          <FileText className="w-4 h-4" />
-          Generate Report
+          <Sparkles className="w-4 h-4" />
+          Generate AI Report
         </button>
         <button
           onClick={triggerEmergency}

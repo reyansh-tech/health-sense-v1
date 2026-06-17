@@ -9,6 +9,7 @@ import HistoryTab from "@/components/HistoryTab";
 import JudgeDemoTab from "@/components/JudgeDemoTab";
 import AlertsTab from "@/components/AlertsTab";
 import AboutTab from "@/components/AboutTab";
+import AIReportView from "@/components/AIReportView";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
 const AppContent: React.FC = () => {
@@ -28,6 +29,8 @@ const AppContent: React.FC = () => {
         return <AlertsTab />;
       case "about":
         return <AboutTab />;
+      case "ai-report":
+        return <AIReportView />;
       default:
         return <DashboardTab />;
     }
