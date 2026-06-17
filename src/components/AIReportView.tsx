@@ -15,7 +15,8 @@ import {
   TrendingUp, 
   CheckCircle2, 
   AlertTriangle,
-  Download
+  Download,
+  FileText
 } from "lucide-react";
 import { showSuccess } from "@/utils/toast";
 
